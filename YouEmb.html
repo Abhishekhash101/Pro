@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pihu - YouTube</title>
-    <link rel="icon" type="image/x-icon" href="assets/img/icon.png" />
+    <title>Side Youtube</title>
     <style>
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -21,8 +20,8 @@
             font-size: 28px;
             margin-bottom: 20px;
         }
-        input[type="text"], textarea {
-            width: 200%;
+        input, textarea {
+            width: 90%;
             max-width: 400px;
             padding: 12px;
             font-size: 16px;
@@ -74,14 +73,34 @@
             padding: 10px;
             margin: 5px 0;
             border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        li:hover {
+            background: #AAB7B8;
+        }
+        .edit, .delete {
+            margin-left: 10px;
+            background-color: #E74C3C;
+            padding: 5px;
+            border: none;
+            border-radius: 3px;
+            color: white;
+            cursor: pointer;
+        }
+        .edit:hover, .delete:hover {
+            background-color: #C0392B;
         }
     </style>
 </head>
 <body>
-    <h1>Sider YouTube</h1>
-    <input type="text" id="video-url" placeholder="Enter YouTube Video URL">
-    <button onclick="loadVideo()">Play Video</button>
-    <div id="video-container"></div>
+    <h1>Sider Youtube</h1>
+    <input type="text" id="videoInput" placeholder="Paste YouTube Video URL" />
+    <button onclick="addVideo()">Add Video</button>
+    <iframe id="videoPlayer" src="" frameborder="0" allowfullscreen></iframe>
+    <ul id="playlist"></ul>
     <textarea id="note-input" placeholder="Enter your note..."></textarea>
     <button onclick="saveNote()">Add Note</button>
     <div id="saved-notes">
@@ -89,45 +108,84 @@
         <ul id="notes-list"></ul>
     </div>
     <script>
-        function loadVideo() {
-            const videoUrl = document.getElementById('video-url').value;
+        function addVideo() {
+            const videoUrl = document.getElementById("videoInput").value.trim();
+            if (!videoUrl) return;
+            
             const videoId = extractVideoId(videoUrl);
-            if (videoId) {
-                const embedUrl = `https://www.youtube.com/embed/${videoId}`;
-                document.getElementById('video-container').innerHTML = `<iframe src="${embedUrl}" allowfullscreen></iframe>`;
-            } else {
-                alert('Please enter a valid YouTube video URL.');
+            if (!videoId) {
+                alert("Invalid YouTube URL");
+                return;
             }
+            
+            const playlistContainer = document.getElementById("playlist");
+            let li = document.createElement("li");
+            li.textContent = `Video: ${videoId}`;
+            li.onclick = () => {
+                document.getElementById("videoPlayer").src = `https://www.youtube.com/embed/${videoId}`;
+            };
+            playlistContainer.appendChild(li);
+            
+            document.getElementById("videoInput").value = "";
         }
-
+        
         function extractVideoId(url) {
-            const regExp = /^.*(?:youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-            const match = url.match(regExp);
-            return (match && match[1].length === 11) ? match[1] : null;
+            const match = url.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/);
+            return match ? match[1] : null;
         }
-
+        
         function saveNote() {
-            const noteInput = document.getElementById('note-input').value.trim();
+            const noteInput = document.getElementById("note-input").value.trim();
             if (noteInput) {
-                let notes = JSON.parse(localStorage.getItem('notes')) || [];
+                let notes = JSON.parse(localStorage.getItem("notes")) || [];
                 notes.push(noteInput);
-                localStorage.setItem('notes', JSON.stringify(notes));
-                document.getElementById('note-input').value = '';
+                localStorage.setItem("notes", JSON.stringify(notes));
+                document.getElementById("note-input").value = "";
                 displayNotes();
             } else {
-                alert('Please enter a note before saving.');
+                alert("Please enter a note before saving.");
             }
         }
         
         function displayNotes() {
-            const notes = JSON.parse(localStorage.getItem('notes')) || [];
-            const notesList = document.getElementById('notes-list');
-            notesList.innerHTML = '';
-            notes.forEach(note => {
-                const li = document.createElement('li');
+            const notes = JSON.parse(localStorage.getItem("notes")) || [];
+            const notesList = document.getElementById("notes-list");
+            notesList.innerHTML = "";
+            notes.forEach((note, index) => {
+                const li = document.createElement("li");
                 li.textContent = note;
+                
+                const editBtn = document.createElement("button");
+                editBtn.textContent = "Edit";
+                editBtn.classList.add("edit");
+                editBtn.onclick = () => editNote(index);
+                
+                const deleteBtn = document.createElement("button");
+                deleteBtn.textContent = "Delete";
+                deleteBtn.classList.add("delete");
+                deleteBtn.onclick = () => deleteNote(index);
+                
+                li.appendChild(editBtn);
+                li.appendChild(deleteBtn);
                 notesList.appendChild(li);
             });
+        }
+        
+        function editNote(index) {
+            let notes = JSON.parse(localStorage.getItem("notes"));
+            const newNote = prompt("Edit your note:", notes[index]);
+            if (newNote !== null) {
+                notes[index] = newNote;
+                localStorage.setItem("notes", JSON.stringify(notes));
+                displayNotes();
+            }
+        }
+        
+        function deleteNote(index) {
+            let notes = JSON.parse(localStorage.getItem("notes"));
+            notes.splice(index, 1);
+            localStorage.setItem("notes", JSON.stringify(notes));
+            displayNotes();
         }
         
         window.onload = displayNotes;
